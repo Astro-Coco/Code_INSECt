@@ -1,5 +1,6 @@
 from PIL import Image
 import numpy as np
+import os
 
 def remove_background_with_text_preservation(image):
     # Convert the image to RGBA mode if not already
@@ -26,11 +27,12 @@ def remove_background_with_text_preservation(image):
     return result_image
 
 
-if __name__ == 'main':
 
-    images_to_clear = ['besoins.png', 'caractéristiques.png', 'Fonctions.png']
+print('RAN')
+images_to_clear = ['besoins.png', 'caractéristiques.png', 'fonctions.png']
 
-    for image_path in images_to_clear:
-        with Image.open(image_path) as img:
-            result = remove_background_with_text_preservation(img)
-            result.save(f"processed_{image_path}")
+for image_path in images_to_clear:
+    print(image_path)
+    with Image.open('Figures/' + image_path) as img:
+        result = remove_background_with_text_preservation(img)
+        result.save('Figures/' +f"processed_{image_path}")
