@@ -15,7 +15,7 @@ class rover:
         self.mass = self.drymass
         self.cruise_speed = 0.1
 
-        self.solar_power = 93.5
+        self.solar_power = 82
 
         self.gravity = 1.62
 
@@ -33,11 +33,12 @@ class rover:
 
     def power_rouler(self, vitesse = 0.1):
         Fs = 1
+        mu_regolithe = 0.5
         mass = self.mass
         eff_moteur = 0.9
         eff_worm_gear = 0.9
 
-        P = self.gravity*mass*vitesse/(eff_moteur*eff_worm_gear)
+        P = mu_regolithe*self.gravity*mass*vitesse/(eff_moteur*eff_worm_gear)
 
         return P*Fs
 
