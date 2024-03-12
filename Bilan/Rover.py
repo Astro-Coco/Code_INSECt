@@ -1,21 +1,24 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
+opérations = {}
+ope_t = {}
 
 class opération:
-    def __init__(self, time, puissance, cycle = True):
+    def __init__(self,name, time, puissance, cycle = True):
+        self.name = name
         self.time= time
         self.puissance = puissance
         self.cycle = cycle
+        self.compteur = 0
             
 class rover:
     def __init__(self):
-        self.drymass = 235
+        self.drymass = 207
         self.mass = self.drymass
         self.cruise_speed = 0.1
 
-        self.solar_power = 82
+        self.solar_power = 91.5
 
         self.gravity = 1.62
 
@@ -25,10 +28,10 @@ class rover:
 
         self.time = 0
 
-        self.battery_E = 25000
+        self.battery_E = 350000
         self.initial_E = self.battery_E
 
-        self.control_consumption = 59
+        self.control_consumption = 65
 
 
     def power_rouler(self, vitesse = 0.1):
@@ -50,33 +53,37 @@ class rover:
 
 Rover = rover()
 
-latence = opération(time = 3, puissance = 0,cycle = False)
+latence = opération(name = 'Latence (contrôle)', time = 3, puissance = 0,cycle = False)
 
-rouler_aller = opération(time= 450, puissance = 0, cycle = False)
+rouler_aller = opération(name = 'Rouler (aller)', time= 450, puissance = 0, cycle = False)
 
-moulin = opération(time= 20, puissance = 24)
+moulin = opération(name = 'Moulin', time= 15, puissance = 24)
 Rover.add_cycle_opération(moulin)
 
-lever_moulin = opération(time= 15, puissance = 24)
+lever_moulin = opération('Lever Moulin',time= 10, puissance = 67)
 Rover.add_cycle_opération(lever_moulin)
 
-attendre_déversement = opération(time=20, puissance  = 0)
+attendre_déversement = opération(name = 'Attente Déversement', time=40, puissance  = 0)
 Rover.add_cycle_opération(attendre_déversement)
 
-descendre_moulin = opération(time= 15, puissance = 24)
+descendre_moulin = opération(name = 'Lever Moulin', time= 10, puissance = lever_moulin.puissance)
 Rover.add_cycle_opération(descendre_moulin)
 
 
-compactage = opération(time=12, puissance = 25, cycle =  False)
+compactage = opération(name = 'Compactage', time=15, puissance = 30, cycle =  False)
 
-ouvrir_rampe = opération(time= 10, puissance = 25, cycle = False)
-déchargement = opération(time= 20, puissance = 25, cycle = False)
-fermeture_rampe = opération(time= 10, puissance = 25, cycle = False)
+débloquer_porte = opération(name = 'Loquet Porte Déchargement', time= 5, puissance = 8.8, cycle = False)
+ouvrir_rampe = opération('Mouvement Porte Déchargement', time= 10, puissance = 28, cycle = False)
+déchargement = opération('Déchargement', time= 20, puissance = 25, cycle = False)
+fermeture_rampe = opération('Mouvement Porte Déchargement', time= 10, puissance = 28, cycle = False)
+bloquer_porte = opération(name = 'Loquet Porte Déchargement', time= 5, puissance = 8.8, cycle = False)
 
-rouler_retour = opération(450, puissance = 0, cycle = False)
+rouler_retour = opération('Rouler (retour)', 450, puissance = 0, cycle = False)
 
 
 def effectuer_opération(operation,vitesse = 0.01):
+
+    
 
     operation_start_time = Rover.time
     if operation == déchargement:
@@ -104,20 +111,34 @@ def effectuer_opération(operation,vitesse = 0.01):
 
         mass.append(Rover.mass)
 
+        if operation not in opérations:
+            opérations[operation.name] = consumption
+            operation.compteur += 1
+        else:
+            opérations[operation.name] = (opérations[operation.name]*opération.compteur + consumption)/(operation.compteur+1)
+            operation.compteur += 1
+
+        if operation not in ope_t:
+            ope_t[operation.name] = 1
+            operation.compteur += 1
+        else:
+            ope_t[operation.name] += 1
+            operation.compteur += 1
+
 #t = 0
 dt = 1
 objectifs_de_cycles = Rover.n_cycle
 
-mass = [Rover.drymass]
-Battery_state = [Rover.battery_E]
-time  = [0]
-Consumption = [-20]
+mass = []
+Battery_state = []
+time  = []
+Consumption = []
 
 #first transport
 effectuer_opération(latence, vitesse = 0)
 effectuer_opération(rouler_aller)
 
-
+import random
 while Rover.n_cycle > 0:
     nombre_cycle_faits = objectifs_de_cycles - Rover.n_cycle
     #cycle du moulin
@@ -125,7 +146,7 @@ while Rover.n_cycle > 0:
         effectuer_opération(latence,vitesse = 0)
         effectuer_opération(operation)
 
-    Rover.mass += 7.5
+    Rover.mass = Rover.mass + 7.5 - 7.5*random.random()*0.3
 
     if (nombre_cycle_faits%8 == 0) and (nombre_cycle_faits != 0):
         effectuer_opération(compactage)
@@ -135,12 +156,26 @@ while Rover.n_cycle > 0:
 else:
     effectuer_opération(latence, vitesse = 0)
     effectuer_opération(rouler_retour)
+
+    
+    effectuer_opération(latence, vitesse=0)
+    effectuer_opération(débloquer_porte, vitesse = 0)
+
     effectuer_opération(latence, vitesse = 0)
     effectuer_opération(ouvrir_rampe, vitesse = 0)
+
+    '''Le compactage ici sert à pousser le regolithe'''
+    effectuer_opération(latence, vitesse = 0)
+    effectuer_opération(compactage)
+
     effectuer_opération(latence, vitesse = 0)
     effectuer_opération(déchargement, vitesse = 0.01)
+
+
     effectuer_opération(latence, vitesse = 0)
     effectuer_opération(fermeture_rampe,vitesse = 0)
+
+    effectuer_opération(bloquer_porte, vitesse = 0)
 
     battery_start = False
     while Rover.battery_E <= Rover.initial_E:
@@ -156,10 +191,14 @@ else:
 import os
 
 # Plot Power Consumption
-plt.plot(time, Consumption, linewidth=0.75)
-plt.title('Power Consumption Over Time')
-plt.xlabel('Time (seconds)')
-plt.ylabel('Puissance demandée')
+scatter =False
+if scatter:
+    plt.scatter(time, Consumption, s=1)
+else:
+    plt.plot(time, Consumption, linewidth = 0.75)
+plt.title('Puissance nette demandée')
+plt.xlabel('Temps (s)')
+plt.ylabel('Puissance demandée (w)')
 plt.minorticks_on()
 plt.grid(which='both', linestyle=':', linewidth='0.5', color='gray')
 plt.show()
@@ -184,4 +223,28 @@ plt.minorticks_on()
 plt.grid(which='both', linestyle=':', linewidth='0.5', color='gray')
 plt.show()
 plt.savefig('Masse')
-        
+
+
+val = [val  for val in opérations.values()]
+
+# Sort the keys and values based on the val values
+sorted_items = sorted(zip(opérations.keys(), val), key=lambda x: x[1])
+sorted_keys, sorted_values = zip(*sorted_items)
+
+
+
+val = [val  for val in opérations.values()]
+
+# Sort the keys and values based on the val values
+sorted_items = sorted(zip(opérations.keys(), val), key=lambda x: x[1])
+sorted_keys, sorted_values = zip(*sorted_items)
+
+plt.barh(y=list(sorted_keys), width=sorted_values, height=0.75)
+
+ # Increase title fontsize
+plt.xlabel('Puissance nette nécessaire (w)', fontsize=14)  # Increase xlabel fontsize
+plt.ylabel('Opérations', fontsize=14)  # Increase ylabel fontsize
+plt.minorticks_on()
+plt.tick_params(axis='both', which='major', labelsize=14)  
+plt.grid(which='both', linestyle=':', linewidth='0.5', color='gray')
+plt.show()
